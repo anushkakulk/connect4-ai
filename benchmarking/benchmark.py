@@ -29,8 +29,13 @@ def random_player_move(board):
     row = get_next_open_row(board, col)
     return row, col
 
+def optimal_player_move(board):
+    """Simulate Optimal Player Move."""
+    col, _ = minimax(board, 3, -float('inf'), float('inf'), False)
+    row = get_next_open_row(board, col)
+    return row, col
 
-def play_game(depth):
+def play_game(depth, optimal_opponent=False):
     """
     Simulate a game between the AI and a random player.
     Returns:
@@ -40,35 +45,35 @@ def play_game(depth):
     """
     board = create_board()
     game_over = False
-    turn = random.choice(['PLAYER', 'AI'])
-    ai_move_times = []  # List to track the time of each AI move
-
+    turn = 'AI'
+    ai_move_times = []  # list to track the time of each AI move
+    move_count = 0
     while not game_over:
         if turn == 'AI':
             start_time = time.time()  
             col, _ = minimax(board, depth, -float('inf'), float('inf'), True)
             row = get_next_open_row(board, col)
-            set_piece(board, row, col, 'X')  # AI's piece is 'X'
-            end_time = time.time()  # End measuring time after AI's move
-
-            ai_move_times.append(end_time - start_time)  # Time taken by the AI to decide its move
+            set_piece(board, row, col, 'X')  
+            end_time = time.time()  
+            time_taken = end_time - start_time
+            ai_move_times.append(time_taken)  # save AI move time
             if winning_move(board, 'X'):
-                return 1, ai_move_times  # Return AI's win and the move time
+                return 1, ai_move_times, move_count  
 
             turn = 'PLAYER'
 
         else:  # Random player's turn
-            row, col = random_player_move(board)
-            set_piece(board, row, col, 'O')  # Random player's piece is 'O'
+            row, col = optimal_player_move(board) if optimal_opponent else random_player_move(board)
+            set_piece(board, row, col, 'O') 
             if winning_move(board, 'O'):
-                return -1, ai_move_times  # Return random player's win, no AI move time for player's turn
+                return -1, ai_move_times, move_count
             turn = 'AI'
-
+        move_count += 1
         if len(get_valid_locations(board)) == 0:
-            return 0, 0  # It's a draw
+            return 0, ai_move_times, move_count  # It's a draw
 
 
-def benchmark_win_rate(depth, games=10):
+def benchmark_win_rate(depth, games=10, optimal_opponent=False):
     """
     Benchmark AI win rate against a random player and track AI move time.
 
@@ -84,15 +89,16 @@ def benchmark_win_rate(depth, games=10):
 
     for _ in range(games):
         print("Simulating game %d/%d..." % (_ + 1, games))
-        result, ai_move_times = play_game(depth)  
+        result, ai_move_times, move_count = play_game(depth, optimal_opponent)  
         results[result] += 1
+        print("Move count for game %d is %d" % (_+1, move_count))
         all_ai_move_times.extend(ai_move_times)  # save timing data from game
 
     win_rate = (results[1] / games) * 100  # win rate percentage
     print(f"AI Win Rate: {win_rate:.2f}%")
     print(f"Results: {results}")
 
-    # Plotting AI Move Times
+    print("Average Time per AI Move: %.4f seconds" % (sum(all_ai_move_times) / len(all_ai_move_times) if all_ai_move_times else 0))
     plt.plot(all_ai_move_times, label=f"AI Move Time (Depth {depth})", marker='o')
     plt.xlabel("Move #")
     plt.ylabel("Time (seconds)")
@@ -104,10 +110,10 @@ def benchmark_win_rate(depth, games=10):
 
 
 if __name__ == "__main__":
-    DEPTH = 7  
+    DEPTH = 7
 
     print("Running AI speed benchmark...")
     benchmark_speed(create_board(), DEPTH)
 
     print("\nRunning AI win rate benchmark vs random player...")
-    benchmark_win_rate(DEPTH)
+    benchmark_win_rate(DEPTH, optimal_opponent=False)

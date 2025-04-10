@@ -14,6 +14,7 @@ transposition_table = {}
 
 def create_board() -> None:
     """Create a new Connect 4 board"""
+    transposition_table.clear()
     return [[EMPTY for _ in range(COLS)] for _ in range(ROWS)]
 
 def print_board(board: list) -> None:
@@ -95,7 +96,7 @@ def get_valid_locations(board):
     """Get a list of valid columns for the next move."""
     return [col for col in range(COLS) if is_valid(board, col)]
 
-def evaluate_window(window, piece):
+def evaluation(window, piece):
     """Evaluate a window of 4 cells for scoring"""
     score = 0
     opp_piece = PLAYER if piece == AI else AI
@@ -124,23 +125,23 @@ def score_position(board, piece):
         row_array = [board[r][c] for c in range(COLS)]
         for c in range(COLS - 3):
             window = row_array[c:c + 4]
-            score += evaluate_window(window, piece)
+            score += evaluation(window, piece)
 
     for c in range(COLS):
         col_array = [board[r][c] for r in range(ROWS)]
         for r in range(ROWS - 3):
             window = col_array[r:r + 4]
-            score += evaluate_window(window, piece)
+            score += evaluation(window, piece)
 
     for r in range(ROWS - 3):
         for c in range(COLS - 3):
             window = [board[r + i][c + i] for i in range(4)]
-            score += evaluate_window(window, piece)
+            score += evaluation(window, piece)
 
     for r in range(ROWS - 3):
         for c in range(COLS - 3):
             window = [board[r + 3 - i][c + i] for i in range(4)]
-            score += evaluate_window(window, piece)
+            score += evaluation(window, piece)
 
     return score
 
